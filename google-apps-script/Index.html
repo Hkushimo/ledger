@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ledger</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #07120f;
+        --surface: #0c1c17;
+        --surface-2: #102920;
+        --text: #e8fff4;
+        --muted: #8eb3a4;
+        --border: #1f4a3a;
+        --accent: #20b26b;
+        --accent-dark: #168a53;
+        --danger: #ff6b5f;
+        --danger-bg: #351713;
+        --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button,
+      .file-button {
+        min-height: 40px;
+        border: 0;
+        border-radius: 0;
+        background: var(--accent);
+        color: #ffffff;
+        cursor: pointer;
+        font-weight: 700;
+        padding: 0 14px;
+      }
+
+      button:hover,
+      .file-button:hover {
+        background: var(--accent-dark);
+      }
+
+      button.secondary,
+      .file-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        background: #0a1713;
+        color: var(--text);
+      }
+
+      button.secondary:hover,
+      .file-button:hover {
+        background: var(--surface-2);
+      }
+
+      button.danger {
+        background: var(--danger-bg);
+        color: var(--danger);
+      }
+
+      button.danger:hover {
+        background: #4a1f19;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      .file-button input {
+        display: none;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 28px clamp(16px, 4vw, 48px);
+        background: #091611;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .app-header h1 {
+        margin: 0;
+        font-size: 30px;
+        letter-spacing: 0;
+      }
+
+      .app-header p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+
+      .header-actions,
+      .filters {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      main {
+        width: min(1180px, calc(100% - 32px));
+        margin: 24px auto 40px;
+      }
+
+      .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 38px;
+        margin-bottom: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 18px;
+      }
+
+      .metric,
+      .panel,
+      .entry-form {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 0;
+        box-shadow: var(--shadow);
+      }
+
+      .metric {
+        padding: 18px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .metric strong {
+        font-size: 26px;
+        letter-spacing: 0;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: 340px minmax(0, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .entry-form {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .form-title,
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--border);
+        border-radius: 0;
+        background: #081611;
+        color: var(--text);
+        padding: 8px 10px;
+      }
+
+      input:focus,
+      select:focus {
+        outline: 2px solid rgba(32, 178, 107, 0.22);
+        border-color: var(--accent);
+      }
+
+      .panel {
+        padding: 18px;
+      }
+
+      .balances {
+        display: grid;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .balance-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 0;
+        background: #091a14;
+      }
+
+      .person-name {
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+
+      .person-detail {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 3px;
+      }
+
+      .balance-amount {
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .positive {
+        color: #52d98e;
+      }
+
+      .negative {
+        color: var(--danger);
+      }
+
+      .transactions-panel {
+        margin-top: 18px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        margin-top: 14px;
+      }
+
+      table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 11px 10px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .money {
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .type-pill {
+        display: inline-block;
+        border-radius: 0;
+        padding: 4px 9px;
+        background: var(--surface-2);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .delete-row {
+        min-height: 32px;
+        padding: 0 10px;
+      }
+
+      .empty {
+        color: var(--muted);
+        padding: 18px 0;
+      }
+
+      @media (max-width: 860px) {
+        .app-header,
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .app-header {
+          display: grid;
+        }
+
+        .summary-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 560px) {
+        main {
+          width: min(100% - 20px, 1180px);
+          margin-top: 14px;
+        }
+
+        .summary-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .form-title,
+        .panel-header,
+        .status-bar {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .header-actions,
+        .filters {
+          width: 100%;
+        }
+
+        .header-actions > *,
+        .filters > * {
+          flex: 1 1 150px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Ledger</h1>
+        <p>Shared Google Sheets-backed bookkeeping for pooled deposits, withdrawals, and fees.</p>
+      </div>
+      <div class="header-actions">
+        <button id="refresh" class="secondary" type="button">Refresh</button>
+        <button id="exportCsv" class="secondary" type="button">Export CSV</button>
+        <label class="file-button">
+          Import CSV
+          <input id="importCsv" type="file" accept=".csv,text/csv">
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <div class="status-bar">
+        <span id="status">Loading shared ledger...</span>
+        <span id="entryCount">0 entries</span>
+      </div>
+
+      <section class="summary-grid" aria-label="Account summary">
+        <div class="metric">
+          <span>Tracked Account Balance</span>
+          <strong id="accountBalance">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Deposits</span>
+          <strong id="totalDeposits">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Withdrawals</span>
+          <strong id="totalWithdrawals">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Fees</span>
+          <strong id="totalFees">$0.00</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="transactionForm" class="entry-form">
+          <div class="form-title">
+            <h2>Add Entry</h2>
+            <button id="clearAll" class="danger" type="button">Clear All</button>
+          </div>
+
+          <label>
+            Date
+            <input id="date" name="date" type="date" required>
+          </label>
+
+          <label>
+            Person
+            <input id="person" name="person" type="text" placeholder="Name or Unassigned" list="peopleList">
+            <datalist id="peopleList"></datalist>
+          </label>
+
+          <label>
+            Type
+            <select id="type" name="type" required>
+              <option value="deposit">Deposit</option>
+              <option value="withdrawal">Withdrawal</option>
+              <option value="fee">Service fee</option>
+            </select>
+          </label>
+
+          <label>
+            Amount
+            <input id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+          </label>
+
+          <label>
+            Bank label or memo
+            <input id="memo" name="memo" type="text" placeholder="Optional">
+          </label>
+
+          <button type="submit">Add Entry</button>
+        </form>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Balances By Person</h2>
+            <input id="personFilter" type="search" placeholder="Filter people">
+          </div>
+          <div id="balances" class="balances"></div>
+        </section>
+      </section>
+
+      <section class="panel transactions-panel">
+        <div class="panel-header">
+          <h2>Entries</h2>
+          <div class="filters">
+            <select id="typeFilter" aria-label="Filter by type">
+              <option value="all">All types</option>
+              <option value="deposit">Deposits</option>
+              <option value="withdrawal">Withdrawals</option>
+              <option value="fee">Fees</option>
+            </select>
+            <input id="search" type="search" placeholder="Search entries">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Person</th>
+                <th>Type</th>
+                <th>Memo</th>
+                <th class="money">Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="transactions"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const UNASSIGNED = "Unassigned";
+
+      const form = document.querySelector("#transactionForm");
+      const dateInput = document.querySelector("#date");
+      const personInput = document.querySelector("#person");
+      const typeInput = document.querySelector("#type");
+      const amountInput = document.querySelector("#amount");
+      const memoInput = document.querySelector("#memo");
+      const searchInput = document.querySelector("#search");
+      const typeFilter = document.querySelector("#typeFilter");
+      const personFilter = document.querySelector("#personFilter");
+      const transactionsBody = document.querySelector("#transactions");
+      const balancesEl = document.querySelector("#balances");
+      const peopleList = document.querySelector("#peopleList");
+      const statusEl = document.querySelector("#status");
+      const entryCountEl = document.querySelector("#entryCount");
+
+      const money = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+      });
+
+      let transactions = [];
+      let busy = false;
+
+      dateInput.valueAsDate = new Date();
+      refresh();
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const amount = Number(amountInput.value);
+        if (!Number.isFinite(amount) || amount <= 0) return;
+
+        setBusy(true, "Saving entry...");
+        runServer("addEntry", {
+          id: crypto.randomUUID(),
+          date: dateInput.value,
+          person: normalizePerson(personInput.value),
+          type: typeInput.value,
+          amount: roundMoney(amount),
+          memo: memoInput.value.trim(),
+        }).then((entries) => {
+          transactions = entries;
+          form.reset();
+          dateInput.valueAsDate = new Date();
+          personInput.focus();
+          render();
+          setBusy(false, "Saved.");
+        }).catch(showError);
+      });
+
+      transactionsBody.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-delete]");
+        if (!button) return;
+
+        setBusy(true, "Deleting entry...");
+        runServer("deleteEntry", button.dataset.delete).then((entries) => {
+          transactions = entries;
+          render();
+          setBusy(false, "Deleted.");
+        }).catch(showError);
+      });
+
+      searchInput.addEventListener("input", renderTransactions);
+      typeFilter.addEventListener("change", renderTransactions);
+      personFilter.addEventListener("input", renderBalances);
+
+      document.querySelector("#refresh").addEventListener("click", refresh);
+
+      document.querySelector("#clearAll").addEventListener("click", () => {
+        if (!transactions.length) return;
+        const confirmed = window.confirm("Clear all entries from the shared Google Sheet?");
+        if (!confirmed) return;
+
+        setBusy(true, "Clearing entries...");
+        runServer("clearEntries").then((entries) => {
+          transactions = entries;
+          render();
+          setBusy(false, "Cleared.");
+        }).catch(showError);
+      });
+
+      document.querySelector("#exportCsv").addEventListener("click", () => {
+        const rows = [
+          ["date", "person", "type", "amount", "memo"],
+          ...transactions.map((entry) => [
+            entry.date,
+            entry.person,
+            entry.type,
+            Number(entry.amount).toFixed(2),
+            entry.memo,
+          ]),
+        ];
+
+        const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+
+      document.querySelector("#importCsv").addEventListener("change", async (event) => {
+        const [file] = event.target.files;
+        if (!file) return;
+
+        const text = await file.text();
+        const imported = parseCsv(text)
+          .slice(1)
+          .map(rowToEntry)
+          .filter(Boolean);
+
+        if (!imported.length) {
+          window.alert("No valid entries found in that CSV.");
+          event.target.value = "";
+          return;
+        }
+
+        setBusy(true, "Importing entries...");
+        runServer("importEntries", imported).then((entries) => {
+          transactions = entries;
+          event.target.value = "";
+          render();
+          setBusy(false, "Imported.");
+        }).catch(showError);
+      });
+
+      function refresh() {
+        setBusy(true, "Loading shared ledger...");
+        runServer("getEntries").then((entries) => {
+          transactions = entries;
+          render();
+          setBusy(false, "Loaded.");
+        }).catch(showError);
+      }
+
+      function render() {
+        renderSummary();
+        renderPeopleList();
+        renderBalances();
+        renderTransactions();
+        entryCountEl.textContent = `${transactions.length} ${transactions.length === 1 ? "entry" : "entries"}`;
+      }
+
+      function renderSummary() {
+        const totals = transactions.reduce(
+          (acc, entry) => {
+            if (entry.type === "deposit") acc.deposits += Number(entry.amount);
+            if (entry.type === "withdrawal") acc.withdrawals += Number(entry.amount);
+            if (entry.type === "fee") acc.fees += Number(entry.amount);
+            return acc;
+          },
+          { deposits: 0, withdrawals: 0, fees: 0 },
+        );
+
+        document.querySelector("#accountBalance").textContent = money.format(
+          totals.deposits - totals.withdrawals - totals.fees,
+        );
+        document.querySelector("#totalDeposits").textContent = money.format(totals.deposits);
+        document.querySelector("#totalWithdrawals").textContent = money.format(totals.withdrawals);
+        document.querySelector("#totalFees").textContent = money.format(totals.fees);
+      }
+
+      function renderPeopleList() {
+        const people = [...new Set(transactions.map((entry) => entry.person))]
+          .filter((person) => person !== UNASSIGNED)
+          .sort((a, b) => a.localeCompare(b));
+
+        peopleList.innerHTML = people.map((person) => `<option value="${escapeHtml(person)}"></option>`).join("");
+      }
+
+      function renderBalances() {
+        const filter = personFilter.value.trim().toLowerCase();
+        const balances = new Map();
+
+        transactions.forEach((entry) => {
+          const current = balances.get(entry.person) || {
+            person: entry.person,
+            deposits: 0,
+            withdrawals: 0,
+            fees: 0,
+            balance: 0,
+          };
+
+          if (entry.type === "deposit") current.deposits += Number(entry.amount);
+          if (entry.type === "withdrawal") current.withdrawals += Number(entry.amount);
+          if (entry.type === "fee") current.fees += Number(entry.amount);
+          current.balance += signedAmount(entry);
+          balances.set(entry.person, current);
+        });
+
+        const rows = [...balances.values()]
+          .filter((row) => row.person.toLowerCase().includes(filter))
+          .sort((a, b) => b.balance - a.balance || a.person.localeCompare(b.person));
+
+        if (!rows.length) {
+          balancesEl.innerHTML = '<div class="empty">No balances yet.</div>';
+          return;
+        }
+
+        balancesEl.innerHTML = rows
+          .map((row) => {
+            const tone = row.balance < 0 ? "negative" : "positive";
+            return `
+              <div class="balance-row">
+                <div>
+                  <div class="person-name">${escapeHtml(row.person)}</div>
+                  <div class="person-detail">
+                    Deposits ${money.format(row.deposits)} | Withdrawals ${money.format(row.withdrawals)} | Fees ${money.format(row.fees)}
+                  </div>
+                </div>
+                <div class="balance-amount ${tone}">${money.format(row.balance)}</div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderTransactions() {
+        const search = searchInput.value.trim().toLowerCase();
+        const type = typeFilter.value;
+        const filtered = transactions.filter((entry) => {
+          const matchesType = type === "all" || entry.type === type;
+          const haystack = `${entry.date} ${entry.person} ${entry.type} ${entry.memo}`.toLowerCase();
+          return matchesType && haystack.includes(search);
+        });
+
+        if (!filtered.length) {
+          transactionsBody.innerHTML = '<tr><td class="empty" colspan="6">No entries match.</td></tr>';
+          return;
+        }
+
+        transactionsBody.innerHTML = filtered
+          .map((entry) => {
+            const signed = signedAmount(entry);
+            const tone = signed < 0 ? "negative" : "positive";
+            return `
+              <tr>
+                <td>${escapeHtml(entry.date)}</td>
+                <td>${escapeHtml(entry.person)}</td>
+                <td><span class="type-pill">${labelForType(entry.type)}</span></td>
+                <td>${escapeHtml(entry.memo || "")}</td>
+                <td class="money ${tone}">${money.format(signed)}</td>
+                <td><button class="danger delete-row" type="button" data-delete="${entry.id}" ${busy ? "disabled" : ""}>Delete</button></td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+
+      function runServer(name, argument) {
+        return new Promise((resolve, reject) => {
+          const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
+          if (argument === undefined) {
+            runner[name]();
+          } else {
+            runner[name](argument);
+          }
+        });
+      }
+
+      function setBusy(nextBusy, message) {
+        busy = nextBusy;
+        statusEl.textContent = message;
+        document.querySelectorAll("button").forEach((button) => {
+          button.disabled = nextBusy;
+        });
+        renderTransactions();
+      }
+
+      function showError(error) {
+        setBusy(false, "Error. Try refreshing.");
+        window.alert(error && error.message ? error.message : String(error));
+      }
+
+      function signedAmount(entry) {
+        return entry.type === "deposit" ? Number(entry.amount) : -Number(entry.amount);
+      }
+
+      function labelForType(type) {
+        if (type === "deposit") return "Deposit";
+        if (type === "withdrawal") return "Withdrawal";
+        return "Service fee";
+      }
+
+      function normalizePerson(value) {
+        return value.trim() || UNASSIGNED;
+      }
+
+      function roundMoney(value) {
+        return Math.round(value * 100) / 100;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function escapeCsv(value) {
+        const text = String(value ?? "");
+        if (!/[",\n\r]/.test(text)) return text;
+        return `"${text.replaceAll('"', '""')}"`;
+      }
+
+      function parseCsv(text) {
+        const rows = [];
+        let row = [];
+        let cell = "";
+        let quoted = false;
+
+        for (let i = 0; i < text.length; i += 1) {
+          const char = text[i];
+          const next = text[i + 1];
+
+          if (char === '"' && quoted && next === '"') {
+            cell += '"';
+            i += 1;
+          } else if (char === '"') {
+            quoted = !quoted;
+          } else if (char === "," && !quoted) {
+            row.push(cell);
+            cell = "";
+          } else if ((char === "\n" || char === "\r") && !quoted) {
+            if (char === "\r" && next === "\n") i += 1;
+            row.push(cell);
+            rows.push(row);
+            row = [];
+            cell = "";
+          } else {
+            cell += char;
+          }
+        }
+
+        if (cell || row.length) {
+          row.push(cell);
+          rows.push(row);
+        }
+
+        return rows;
+      }
+
+      function rowToEntry(row) {
+        const [date, person, type, amount, memo = ""] = row;
+        const value = Number(amount);
+
+        if (!date || !["deposit", "withdrawal", "fee"].includes(type) || !Number.isFinite(value) || value <= 0) {
+          return null;
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          date,
+          person: normalizePerson(person || ""),
+          type,
+          amount: roundMoney(value),
+          memo,
+        };
+      }
+    </script>
+  </body>
+</html>

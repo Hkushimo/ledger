@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07120f">
+    <meta name="description" content="Track pooled deposits, withdrawals, and service fees by person.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Ledger">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ledger</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Ledger</h1>
+        <p>Track pooled deposits, withdrawals, and service fees by person.</p>
+      </div>
+      <div class="header-actions">
+        <button id="exportCsv" class="secondary" type="button">Export CSV</button>
+        <label class="file-button">
+          Import CSV
+          <input id="importCsv" type="file" accept=".csv,text/csv">
+        </label>
+      </div>
+    </header>
+
+    <main>
+      <section class="summary-grid" aria-label="Account summary">
+        <div class="metric">
+          <span>Tracked Account Balance</span>
+          <strong id="accountBalance">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Deposits</span>
+          <strong id="totalDeposits">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Withdrawals</span>
+          <strong id="totalWithdrawals">$0.00</strong>
+        </div>
+        <div class="metric">
+          <span>Total Fees</span>
+          <strong id="totalFees">$0.00</strong>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form id="transactionForm" class="entry-form">
+          <div class="form-title">
+            <h2>Add Entry</h2>
+            <button id="clearAll" class="danger" type="button">Clear All</button>
+          </div>
+
+          <label>
+            Date
+            <input id="date" name="date" type="date" required>
+          </label>
+
+          <label>
+            Person
+            <input id="person" name="person" type="text" placeholder="Name or Unassigned" list="peopleList">
+            <datalist id="peopleList"></datalist>
+          </label>
+
+          <label>
+            Type
+            <select id="type" name="type" required>
+              <option value="deposit">Deposit</option>
+              <option value="withdrawal">Withdrawal</option>
+              <option value="fee">Service fee</option>
+            </select>
+          </label>
+
+          <label>
+            Amount
+            <input id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+          </label>
+
+          <label>
+            Bank label or memo
+            <input id="memo" name="memo" type="text" placeholder="Optional">
+          </label>
+
+          <button type="submit">Add Entry</button>
+        </form>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Balances By Person</h2>
+            <input id="personFilter" type="search" placeholder="Filter people">
+          </div>
+          <div id="balances" class="balances"></div>
+        </section>
+      </section>
+
+      <section class="panel transactions-panel">
+        <div class="panel-header">
+          <h2>Entries</h2>
+          <div class="filters">
+            <select id="typeFilter" aria-label="Filter by type">
+              <option value="all">All types</option>
+              <option value="deposit">Deposits</option>
+              <option value="withdrawal">Withdrawals</option>
+              <option value="fee">Fees</option>
+            </select>
+            <input id="search" type="search" placeholder="Search entries">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Person</th>
+                <th>Type</th>
+                <th>Memo</th>
+                <th class="money">Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="transactions"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
