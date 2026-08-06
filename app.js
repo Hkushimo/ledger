@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/a/macros/keemthedesigner.xyz/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec";
 const CACHE_KEY = "shared-ledger-cache-v1";
 const UNASSIGNED = "Unassigned";
 

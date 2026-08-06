@@ -47,7 +47,7 @@ Use **Export CSV** regularly to keep a backup.
 The files in `google-apps-script/` must be deployed as the Apps Script web app backend. The GitHub Pages app is configured to use:
 
 ```text
-https://script.google.com/a/macros/keemthedesigner.xyz/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec
+https://script.google.com/macros/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec
 ```
 
-When updating Apps Script, save both files and deploy a new version from **Deploy > Manage deployments**.
+When updating Apps Script, save both files and deploy a new version from **Deploy > Manage deployments**. Set access to **Anyone** so the GitHub Pages app can load the Sheet without redirecting to Google sign-in.
