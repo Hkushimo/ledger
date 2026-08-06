@@ -114,32 +114,6 @@ document.querySelector("#exportCsv").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-document.querySelector("#importCsv").addEventListener("change", async (event) => {
-  const [file] = event.target.files;
-  if (!file || busy) return;
-
-  const text = await file.text();
-  const imported = parseCsv(text)
-    .slice(1)
-    .map(rowToEntry)
-    .filter(Boolean);
-
-  if (!imported.length) {
-    window.alert("No valid entries found in that CSV.");
-    event.target.value = "";
-    return;
-  }
-
-  try {
-    setBusy(true, "Importing to shared sheet...");
-    const payload = await apiRemote("import", { entries: imported });
-    event.target.value = "";
-    applyEntries(payload, "Imported.");
-  } catch (error) {
-    showError(error);
-  }
-});
-
 async function refreshRemote(doneMessage = "Synced.") {
   try {
     setBusy(true, "Loading shared sheet...");
@@ -383,61 +357,6 @@ function escapeCsv(value) {
   const text = String(value ?? "");
   if (!/[",\n\r]/.test(text)) return text;
   return `"${text.replaceAll('"', '""')}"`;
-}
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let cell = "";
-  let quoted = false;
-
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    const next = text[i + 1];
-
-    if (char === '"' && quoted && next === '"') {
-      cell += '"';
-      i += 1;
-    } else if (char === '"') {
-      quoted = !quoted;
-    } else if (char === "," && !quoted) {
-      row.push(cell);
-      cell = "";
-    } else if ((char === "\n" || char === "\r") && !quoted) {
-      if (char === "\r" && next === "\n") i += 1;
-      row.push(cell);
-      rows.push(row);
-      row = [];
-      cell = "";
-    } else {
-      cell += char;
-    }
-  }
-
-  if (cell || row.length) {
-    row.push(cell);
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-function rowToEntry(row) {
-  const [date, person, type, amount, memo = ""] = row;
-  const value = Number(amount);
-
-  if (!date || !["deposit", "withdrawal", "fee"].includes(type) || !Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    date,
-    person: normalizePerson(person || ""),
-    type,
-    amount: roundMoney(value),
-    memo,
-  };
 }
 
 function registerServiceWorker() {

@@ -55,5 +55,4 @@ The API supports JSONP calls:
 - `?action=list&callback=callbackName`
 - `?action=add&payload={"entry":{...}}&callback=callbackName`
 - `?action=delete&payload={"id":"..."}&callback=callbackName`
-- `?action=import&payload={"entries":[...]}&callback=callbackName`
 - `?action=clear&callback=callbackName`

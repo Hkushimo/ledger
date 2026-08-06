@@ -36,10 +36,6 @@ function handleApiRequest_(payload) {
       return ok_(addEntry(payload.entry));
     }
 
-    if (action === "import") {
-      return ok_(importEntries(payload.entries));
-    }
-
     if (action === "delete") {
       return ok_(deleteEntry(payload.id));
     }
@@ -105,38 +101,6 @@ function addEntry(entry) {
       now,
       now,
     ]]);
-  } finally {
-    lock.releaseLock();
-  }
-
-  return getEntries();
-}
-
-function importEntries(entries) {
-  if (!Array.isArray(entries)) {
-    throw new Error("Expected an array of entries.");
-  }
-
-  const cleanEntries = entries.map(normalizeEntry_);
-  if (!cleanEntries.length) return getEntries();
-
-  const lock = LockService.getDocumentLock();
-  lock.waitLock(10000);
-
-  try {
-    const sheet = getLedgerSheet_();
-    const now = new Date();
-    const rows = cleanEntries.map((entry) => [
-      entry.id,
-      parseEntryDate_(entry.date),
-      entry.person,
-      entry.type,
-      entry.amount,
-      entry.memo,
-      now,
-      now,
-    ]);
-    writeRows_(sheet, rows);
   } finally {
     lock.releaseLock();
   }
