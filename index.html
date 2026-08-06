@@ -55,40 +55,45 @@
         <form id="transactionForm" class="entry-form">
           <div class="form-title">
             <h2>Add Entry</h2>
-            <button id="clearAll" class="danger" type="button">Clear All</button>
+            <button id="toggleEntryForm" class="secondary" type="button" aria-expanded="false" aria-controls="entryFormBody">Open</button>
           </div>
 
-          <label>
-            Date
-            <input id="date" name="date" type="date" required>
-          </label>
+          <div id="entryFormBody" class="entry-form-body" hidden>
+            <label>
+              Date
+              <input id="date" name="date" type="date" required>
+            </label>
 
-          <label>
-            Person
-            <input id="person" name="person" type="text" placeholder="Name or Unassigned" list="peopleList">
-            <datalist id="peopleList"></datalist>
-          </label>
+            <label>
+              Person
+              <input id="person" name="person" type="text" placeholder="Name or Unassigned" list="peopleList">
+              <datalist id="peopleList"></datalist>
+            </label>
 
-          <label>
-            Type
-            <select id="type" name="type" required>
-              <option value="deposit">Deposit</option>
-              <option value="withdrawal">Withdrawal</option>
-              <option value="fee">Service fee</option>
-            </select>
-          </label>
+            <label>
+              Type
+              <select id="type" name="type" required>
+                <option value="deposit">Deposit</option>
+                <option value="withdrawal">Withdrawal</option>
+                <option value="fee">Service fee</option>
+              </select>
+            </label>
 
-          <label>
-            Amount
-            <input id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
-          </label>
+            <label>
+              Amount
+              <input id="amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
+            </label>
 
-          <label>
-            Bank label or memo
-            <input id="memo" name="memo" type="text" placeholder="Optional">
-          </label>
+            <label>
+              Bank label or memo
+              <input id="memo" name="memo" type="text" placeholder="Optional">
+            </label>
 
-          <button type="submit">Add Entry</button>
+            <div class="form-actions">
+              <button type="submit">Add Entry</button>
+              <button id="clearAll" class="danger" type="button">Clear All</button>
+            </div>
+          </div>
         </form>
 
         <section class="panel">
