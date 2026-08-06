@@ -108,6 +108,17 @@ main {
   margin: 24px auto 40px;
 }
 
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -316,7 +327,8 @@ th {
   }
 
   .form-title,
-  .panel-header {
+  .panel-header,
+  .status-bar {
     align-items: stretch;
     flex-direction: column;
   }

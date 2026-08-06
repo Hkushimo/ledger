@@ -12,7 +12,7 @@ This repo is ready to deploy as a static GitHub Pages app.
 4. Set **Source** to **GitHub Actions**.
 5. Push to `main`, or run the **Deploy GitHub Pages** workflow manually.
 
-After the Pages URL is live, open it in Chrome, Edge, or Safari and use the browser install option. The PWA caches the app shell for offline use. Ledger data is stored in that browser's local storage, so use **Export CSV** for backups.
+After the Pages URL is live, open it in Chrome, Edge, or Safari and use the browser install option. The app uses the Google Apps Script web app as its backend, so everyone who opens the Pages link reads and writes the same Google Sheet.
 
 ## Shared Google Sheets Version
 
@@ -33,15 +33,21 @@ The app stores entries in a `Ledger` tab in the Sheet. It creates the tab and he
 
 ## Local Single-Computer Version
 
-Open `index.html` in a browser. Entries are saved only in that browser's local storage.
+For the shared version, use the GitHub Pages URL. Opening `index.html` directly from disk is only useful for layout checks because browser security rules can block the shared backend.
 
 - Deposits increase a person's balance.
 - Withdrawals decrease a person's balance.
 - Service fees decrease a person's balance.
 - Blank people are saved as `Unassigned`.
 
-Use **Export CSV** regularly to keep a backup or move data between the local and shared versions.
+Use **Export CSV** regularly to keep a backup.
 
 ## Shared Google Sheets Note
 
-The files in `google-apps-script/` are still included for the shared Google Sheets-backed version. GitHub Pages cannot directly use `google.script.run`, so the Pages PWA is the standalone local-storage version unless a separate API bridge is added.
+The files in `google-apps-script/` must be deployed as the Apps Script web app backend. The GitHub Pages app is configured to use:
+
+```text
+https://script.google.com/a/macros/keemthedesigner.xyz/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec
+```
+
+When updating Apps Script, save both files and deploy a new version from **Deploy > Manage deployments**.

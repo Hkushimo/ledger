@@ -5,12 +5,76 @@ const UNASSIGNED = "Unassigned";
 const DATE_FORMAT = "m/d/yyyy";
 const DATE_TIME_FORMAT = "m/d/yyyy h:mm AM/PM";
 const MONEY_FORMAT = "$#,##0.00";
-const BUILD_VERSION = "2026-08-06-dark-green-fixed-widths";
+const BUILD_VERSION = "2026-08-06-pages-api";
 
-function doGet() {
+function doGet(event) {
+  const action = event && event.parameter && event.parameter.action;
+  const callback = event && event.parameter && event.parameter.callback;
+
+  if (action) {
+    return apiResponse_(handleApiRequest_({ action }), callback);
+  }
+
   return HtmlService.createHtmlOutputFromFile("Index")
     .setTitle("Ledger")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function doPost(event) {
+  let payload = {};
+
+  if (event && event.postData && event.postData.contents) {
+    payload = JSON.parse(event.postData.contents);
+  }
+
+  return apiResponse_(handleApiRequest_(payload), null);
+}
+
+function handleApiRequest_(payload) {
+  try {
+    const action = String(payload.action || "list");
+
+    if (action === "list") {
+      return { ok: true, entries: getEntries(), buildVersion: BUILD_VERSION };
+    }
+
+    if (action === "add") {
+      return { ok: true, entries: addEntry(payload.entry), buildVersion: BUILD_VERSION };
+    }
+
+    if (action === "import") {
+      return { ok: true, entries: importEntries(payload.entries), buildVersion: BUILD_VERSION };
+    }
+
+    if (action === "delete") {
+      return { ok: true, entries: deleteEntry(payload.id), buildVersion: BUILD_VERSION };
+    }
+
+    if (action === "clear") {
+      return { ok: true, entries: clearEntries(), buildVersion: BUILD_VERSION };
+    }
+
+    throw new Error("Unknown action.");
+  } catch (error) {
+    return {
+      ok: false,
+      error: error && error.message ? error.message : String(error),
+      buildVersion: BUILD_VERSION,
+    };
+  }
+}
+
+function apiResponse_(payload, callback) {
+  if (callback) {
+    const safeCallback = String(callback).replace(/[^\w.$]/g, "");
+    return ContentService
+      .createTextOutput(`${safeCallback}(${JSON.stringify(payload)});`)
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function getEntries() {

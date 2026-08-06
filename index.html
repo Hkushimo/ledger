@@ -18,9 +18,10 @@
     <header class="app-header">
       <div>
         <h1>Ledger</h1>
-        <p>Track pooled deposits, withdrawals, and service fees by person.</p>
+        <p>Shared bookkeeping for pooled deposits, withdrawals, and fees.</p>
       </div>
       <div class="header-actions">
+        <button id="refresh" class="secondary" type="button">Refresh</button>
         <button id="exportCsv" class="secondary" type="button">Export CSV</button>
         <label class="file-button">
           Import CSV
@@ -30,6 +31,11 @@
     </header>
 
     <main>
+      <div class="status-bar">
+        <span id="status">Loading shared sheet...</span>
+        <span id="entryCount">0 entries</span>
+      </div>
+
       <section class="summary-grid" aria-label="Account summary">
         <div class="metric">
           <span>Tracked Account Balance</span>

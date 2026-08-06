@@ -1,4 +1,5 @@
-const STORAGE_KEY = "simple-ledger-transactions-v1";
+const API_URL = "https://script.google.com/a/macros/keemthedesigner.xyz/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec";
+const CACHE_KEY = "shared-ledger-cache-v1";
 const UNASSIGNED = "Unassigned";
 
 const form = document.querySelector("#transactionForm");
@@ -13,60 +14,82 @@ const personFilter = document.querySelector("#personFilter");
 const transactionsBody = document.querySelector("#transactions");
 const balancesEl = document.querySelector("#balances");
 const peopleList = document.querySelector("#peopleList");
+const statusEl = document.querySelector("#status");
+const entryCountEl = document.querySelector("#entryCount");
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 });
 
-let transactions = loadTransactions();
+let transactions = loadCachedTransactions();
+let busy = false;
 
 registerServiceWorker();
 dateInput.valueAsDate = new Date();
 render();
+refreshRemote();
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const amount = Number(amountInput.value);
-  if (!Number.isFinite(amount) || amount <= 0) return;
+  if (!Number.isFinite(amount) || amount <= 0 || busy) return;
 
-  transactions.unshift({
+  const entry = {
     id: crypto.randomUUID(),
     date: dateInput.value,
     person: normalizePerson(personInput.value),
     type: typeInput.value,
     amount: roundMoney(amount),
     memo: memoInput.value.trim(),
-  });
+  };
 
-  saveTransactions();
-  form.reset();
-  dateInput.valueAsDate = new Date();
-  personInput.focus();
-  render();
+  try {
+    setBusy(true, "Saving to shared sheet...");
+    await postRemote("add", { entry });
+    form.reset();
+    dateInput.valueAsDate = new Date();
+    personInput.focus();
+    await refreshRemote("Saved.");
+  } catch (error) {
+    showError(error);
+  }
 });
 
-transactionsBody.addEventListener("click", (event) => {
+transactionsBody.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-delete]");
-  if (!button) return;
+  if (!button || busy) return;
 
-  transactions = transactions.filter((entry) => entry.id !== button.dataset.delete);
-  saveTransactions();
-  render();
+  try {
+    setBusy(true, "Deleting from shared sheet...");
+    await postRemote("delete", { id: button.dataset.delete });
+    await refreshRemote("Deleted.");
+  } catch (error) {
+    showError(error);
+  }
 });
 
 searchInput.addEventListener("input", renderTransactions);
 typeFilter.addEventListener("change", renderTransactions);
 personFilter.addEventListener("input", renderBalances);
 
-document.querySelector("#clearAll").addEventListener("click", () => {
-  if (!transactions.length) return;
-  const confirmed = window.confirm("Clear all ledger entries from this browser?");
+document.querySelector("#refresh").addEventListener("click", () => {
+  if (!busy) refreshRemote();
+});
+
+document.querySelector("#clearAll").addEventListener("click", async () => {
+  if (!transactions.length || busy) return;
+  const confirmed = window.confirm("Clear all entries from the shared Google Sheet?");
   if (!confirmed) return;
-  transactions = [];
-  saveTransactions();
-  render();
+
+  try {
+    setBusy(true, "Clearing shared sheet...");
+    await postRemote("clear", {});
+    await refreshRemote("Cleared.");
+  } catch (error) {
+    showError(error);
+  }
 });
 
 document.querySelector("#exportCsv").addEventListener("click", () => {
@@ -76,7 +99,7 @@ document.querySelector("#exportCsv").addEventListener("click", () => {
       entry.date,
       entry.person,
       entry.type,
-      entry.amount.toFixed(2),
+      Number(entry.amount).toFixed(2),
       entry.memo,
     ]),
   ];
@@ -93,7 +116,7 @@ document.querySelector("#exportCsv").addEventListener("click", () => {
 
 document.querySelector("#importCsv").addEventListener("change", async (event) => {
   const [file] = event.target.files;
-  if (!file) return;
+  if (!file || busy) return;
 
   const text = await file.text();
   const imported = parseCsv(text)
@@ -107,25 +130,43 @@ document.querySelector("#importCsv").addEventListener("change", async (event) =>
     return;
   }
 
-  transactions = [...imported, ...transactions];
-  saveTransactions();
-  event.target.value = "";
-  render();
+  try {
+    setBusy(true, "Importing to shared sheet...");
+    await postRemote("import", { entries: imported });
+    event.target.value = "";
+    await refreshRemote("Imported.");
+  } catch (error) {
+    showError(error);
+  }
 });
+
+async function refreshRemote(doneMessage = "Synced.") {
+  try {
+    setBusy(true, "Loading shared sheet...");
+    const payload = await getRemote("list");
+    transactions = Array.isArray(payload.entries) ? payload.entries.filter(isEntry) : [];
+    saveCachedTransactions();
+    render();
+    setBusy(false, doneMessage);
+  } catch (error) {
+    showError(error);
+  }
+}
 
 function render() {
   renderSummary();
   renderPeopleList();
   renderBalances();
   renderTransactions();
+  entryCountEl.textContent = `${transactions.length} ${transactions.length === 1 ? "entry" : "entries"}`;
 }
 
 function renderSummary() {
   const totals = transactions.reduce(
     (acc, entry) => {
-      if (entry.type === "deposit") acc.deposits += entry.amount;
-      if (entry.type === "withdrawal") acc.withdrawals += entry.amount;
-      if (entry.type === "fee") acc.fees += entry.amount;
+      if (entry.type === "deposit") acc.deposits += Number(entry.amount);
+      if (entry.type === "withdrawal") acc.withdrawals += Number(entry.amount);
+      if (entry.type === "fee") acc.fees += Number(entry.amount);
       return acc;
     },
     { deposits: 0, withdrawals: 0, fees: 0 },
@@ -160,9 +201,9 @@ function renderBalances() {
       balance: 0,
     };
 
-    if (entry.type === "deposit") current.deposits += entry.amount;
-    if (entry.type === "withdrawal") current.withdrawals += entry.amount;
-    if (entry.type === "fee") current.fees += entry.amount;
+    if (entry.type === "deposit") current.deposits += Number(entry.amount);
+    if (entry.type === "withdrawal") current.withdrawals += Number(entry.amount);
+    if (entry.type === "fee") current.fees += Number(entry.amount);
     current.balance += signedAmount(entry);
     balances.set(entry.person, current);
   });
@@ -219,15 +260,81 @@ function renderTransactions() {
           <td><span class="type-pill">${labelForType(entry.type)}</span></td>
           <td>${escapeHtml(entry.memo || "")}</td>
           <td class="money ${tone}">${money.format(signed)}</td>
-          <td><button class="danger delete-row" type="button" data-delete="${entry.id}">Delete</button></td>
+          <td><button class="danger delete-row" type="button" data-delete="${entry.id}" ${busy ? "disabled" : ""}>Delete</button></td>
         </tr>
       `;
     })
     .join("");
 }
 
+function getRemote(action) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `ledgerCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const script = document.createElement("script");
+    const url = new URL(API_URL);
+    url.searchParams.set("action", action);
+    url.searchParams.set("callback", callbackName);
+    url.searchParams.set("_", String(Date.now()));
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("The shared sheet did not respond."));
+    }, 20000);
+
+    function cleanup() {
+      window.clearTimeout(timeout);
+      delete window[callbackName];
+      script.remove();
+    }
+
+    window[callbackName] = (payload) => {
+      cleanup();
+      if (payload && payload.ok) {
+        resolve(payload);
+      } else {
+        reject(new Error((payload && payload.error) || "Shared sheet request failed."));
+      }
+    };
+
+    script.onerror = () => {
+      cleanup();
+      reject(new Error("Unable to connect to the shared sheet."));
+    };
+
+    script.src = url.toString();
+    document.head.append(script);
+  });
+}
+
+async function postRemote(action, payload) {
+  await fetch(API_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8",
+    },
+    body: JSON.stringify({ action, ...payload }),
+  });
+
+  await delay(700);
+}
+
+function setBusy(nextBusy, message) {
+  busy = nextBusy;
+  statusEl.textContent = message;
+  document.querySelectorAll("button").forEach((button) => {
+    button.disabled = nextBusy;
+  });
+  renderTransactions();
+}
+
+function showError(error) {
+  setBusy(false, "Sync error.");
+  window.alert(error && error.message ? error.message : String(error));
+}
+
 function signedAmount(entry) {
-  return entry.type === "deposit" ? entry.amount : -entry.amount;
+  return entry.type === "deposit" ? Number(entry.amount) : -Number(entry.amount);
 }
 
 function labelForType(type) {
@@ -244,17 +351,17 @@ function roundMoney(value) {
   return Math.round(value * 100) / 100;
 }
 
-function loadTransactions() {
+function loadCachedTransactions() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const saved = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
     return Array.isArray(saved) ? saved.filter(isEntry) : [];
   } catch {
     return [];
   }
 }
 
-function saveTransactions() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+function saveCachedTransactions() {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(transactions));
 }
 
 function isEntry(entry) {
@@ -264,7 +371,7 @@ function isEntry(entry) {
     typeof entry.date === "string" &&
     typeof entry.person === "string" &&
     ["deposit", "withdrawal", "fee"].includes(entry.type) &&
-    Number.isFinite(entry.amount)
+    Number.isFinite(Number(entry.amount))
   );
 }
 
@@ -336,6 +443,12 @@ function rowToEntry(row) {
     amount: roundMoney(value),
     memo,
   };
+}
+
+function delay(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
 }
 
 function registerServiceWorker() {
