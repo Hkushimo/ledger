@@ -164,21 +164,6 @@ main {
   padding: 18px;
 }
 
-.entry-form-body {
-  display: grid;
-  gap: 14px;
-}
-
-.entry-form-body[hidden] {
-  display: none;
-}
-
-.form-actions {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-}
-
 .form-title,
 .panel-header {
   display: flex;
@@ -349,13 +334,8 @@ th {
   }
 
   .header-actions,
-  .filters,
-  .form-actions {
+  .filters {
     width: 100%;
-  }
-
-  .form-actions {
-    grid-template-columns: 1fr;
   }
 
   .header-actions > *,

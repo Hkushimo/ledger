@@ -3,8 +3,6 @@ const CACHE_KEY = "shared-ledger-cache-v1";
 const UNASSIGNED = "Unassigned";
 
 const form = document.querySelector("#transactionForm");
-const toggleEntryFormButton = document.querySelector("#toggleEntryForm");
-const entryFormBody = document.querySelector("#entryFormBody");
 const dateInput = document.querySelector("#date");
 const personInput = document.querySelector("#person");
 const typeInput = document.querySelector("#type");
@@ -75,17 +73,6 @@ transactionsBody.addEventListener("click", async (event) => {
 searchInput.addEventListener("input", renderTransactions);
 typeFilter.addEventListener("change", renderTransactions);
 personFilter.addEventListener("input", renderBalances);
-
-toggleEntryFormButton.addEventListener("click", () => {
-  const shouldOpen = entryFormBody.hidden;
-  entryFormBody.hidden = !shouldOpen;
-  toggleEntryFormButton.setAttribute("aria-expanded", String(shouldOpen));
-  toggleEntryFormButton.textContent = shouldOpen ? "Close" : "Open";
-
-  if (shouldOpen) {
-    personInput.focus();
-  }
-});
 
 document.querySelector("#refresh").addEventListener("click", () => {
   if (!busy) refreshRemote();
