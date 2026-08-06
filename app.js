@@ -47,11 +47,11 @@ form.addEventListener("submit", async (event) => {
 
   try {
     setBusy(true, "Saving to shared sheet...");
-    await postRemote("add", { entry });
+    const payload = await apiRemote("add", { entry });
     form.reset();
     dateInput.valueAsDate = new Date();
     personInput.focus();
-    await refreshRemote("Saved.");
+    applyEntries(payload, "Saved.");
   } catch (error) {
     showError(error);
   }
@@ -63,8 +63,8 @@ transactionsBody.addEventListener("click", async (event) => {
 
   try {
     setBusy(true, "Deleting from shared sheet...");
-    await postRemote("delete", { id: button.dataset.delete });
-    await refreshRemote("Deleted.");
+    const payload = await apiRemote("delete", { id: button.dataset.delete });
+    applyEntries(payload, "Deleted.");
   } catch (error) {
     showError(error);
   }
@@ -85,8 +85,8 @@ document.querySelector("#clearAll").addEventListener("click", async () => {
 
   try {
     setBusy(true, "Clearing shared sheet...");
-    await postRemote("clear", {});
-    await refreshRemote("Cleared.");
+    const payload = await apiRemote("clear");
+    applyEntries(payload, "Cleared.");
   } catch (error) {
     showError(error);
   }
@@ -132,9 +132,9 @@ document.querySelector("#importCsv").addEventListener("change", async (event) =>
 
   try {
     setBusy(true, "Importing to shared sheet...");
-    await postRemote("import", { entries: imported });
+    const payload = await apiRemote("import", { entries: imported });
     event.target.value = "";
-    await refreshRemote("Imported.");
+    applyEntries(payload, "Imported.");
   } catch (error) {
     showError(error);
   }
@@ -143,11 +143,8 @@ document.querySelector("#importCsv").addEventListener("change", async (event) =>
 async function refreshRemote(doneMessage = "Synced.") {
   try {
     setBusy(true, "Loading shared sheet...");
-    const payload = await getRemote("list");
-    transactions = Array.isArray(payload.entries) ? payload.entries.filter(isEntry) : [];
-    saveCachedTransactions();
-    render();
-    setBusy(false, doneMessage);
+    const payload = await apiRemote("list");
+    applyEntries(payload, doneMessage);
   } catch (error) {
     showError(error);
   }
@@ -267,7 +264,7 @@ function renderTransactions() {
     .join("");
 }
 
-function getRemote(action) {
+function apiRemote(action, payload = {}) {
   return new Promise((resolve, reject) => {
     const callbackName = `ledgerCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const script = document.createElement("script");
@@ -275,6 +272,10 @@ function getRemote(action) {
     url.searchParams.set("action", action);
     url.searchParams.set("callback", callbackName);
     url.searchParams.set("_", String(Date.now()));
+
+    if (Object.keys(payload).length) {
+      url.searchParams.set("payload", JSON.stringify(payload));
+    }
 
     const timeout = window.setTimeout(() => {
       cleanup();
@@ -306,17 +307,11 @@ function getRemote(action) {
   });
 }
 
-async function postRemote(action, payload) {
-  await fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8",
-    },
-    body: JSON.stringify({ action, ...payload }),
-  });
-
-  await delay(700);
+function applyEntries(payload, message) {
+  transactions = Array.isArray(payload.entries) ? payload.entries.filter(isEntry) : [];
+  saveCachedTransactions();
+  render();
+  setBusy(false, message);
 }
 
 function setBusy(nextBusy, message) {
@@ -443,12 +438,6 @@ function rowToEntry(row) {
     amount: roundMoney(value),
     memo,
   };
-}
-
-function delay(ms) {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
 }
 
 function registerServiceWorker() {

@@ -14,20 +14,18 @@ This repo is ready to deploy as a static GitHub Pages app.
 
 After the Pages URL is live, open it in Chrome, Edge, or Safari and use the browser install option. The app uses the Google Apps Script web app as its backend, so everyone who opens the Pages link reads and writes the same Google Sheet.
 
-## Shared Google Sheets Version
+## Apps Script API
 
-Use the files in `google-apps-script/` when two people need to manage the same ledger from separate computers.
+Use `google-apps-script/Code.gs` as the API backend. The Apps Script project does not need an HTML file.
 
 1. Create a Google Sheet named `Ledger`.
 2. In the Sheet, open **Extensions > Apps Script**.
-3. Add two Apps Script files:
-   - `Code.gs` from `google-apps-script/Code.gs`
-   - `Index.html` from `google-apps-script/Index.html`
+3. Replace `Code.gs` with `google-apps-script/Code.gs`.
 4. Paste `google-apps-script/appsscript.json` into **Project Settings > Show appsscript.json manifest file**.
 5. Deploy with **Deploy > New deployment > Web app**.
 6. Set **Execute as** to yourself.
-7. Set access to the narrowest option that includes both users, then deploy.
-8. Open the web app URL from each computer.
+7. Set access to **Anyone**, then deploy.
+8. Use the GitHub Pages URL as the app link.
 
 The app stores entries in a `Ledger` tab in the Sheet. It creates the tab and headers automatically.
 
@@ -44,10 +42,18 @@ Use **Export CSV** regularly to keep a backup.
 
 ## Shared Google Sheets Note
 
-The files in `google-apps-script/` must be deployed as the Apps Script web app backend. The GitHub Pages app is configured to use:
+The GitHub Pages app is configured to use this Apps Script API:
 
 ```text
 https://script.google.com/macros/s/AKfycbzonW0VKREVtOx8jb7h7mv9iAnmJGJ7OaOWRle4tyZf8AhRt1hyEHPslu_iCCmv55LZNA/exec
 ```
 
-When updating Apps Script, save both files and deploy a new version from **Deploy > Manage deployments**. Set access to **Anyone** so the GitHub Pages app can load the Sheet without redirecting to Google sign-in.
+When updating Apps Script, save `Code.gs` and deploy a new version from **Deploy > Manage deployments**. Set access to **Anyone** so the GitHub Pages app can load the Sheet without redirecting to Google sign-in.
+
+The API supports JSONP calls:
+
+- `?action=list&callback=callbackName`
+- `?action=add&payload={"entry":{...}}&callback=callbackName`
+- `?action=delete&payload={"id":"..."}&callback=callbackName`
+- `?action=import&payload={"entries":[...]}&callback=callbackName`
+- `?action=clear&callback=callbackName`

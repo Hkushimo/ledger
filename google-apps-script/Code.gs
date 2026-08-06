@@ -5,29 +5,23 @@ const UNASSIGNED = "Unassigned";
 const DATE_FORMAT = "m/d/yyyy";
 const DATE_TIME_FORMAT = "m/d/yyyy h:mm AM/PM";
 const MONEY_FORMAT = "$#,##0.00";
-const BUILD_VERSION = "2026-08-06-pages-api";
+const BUILD_VERSION = "2026-08-06-api-only";
 
 function doGet(event) {
-  const action = event && event.parameter && event.parameter.action;
-  const callback = event && event.parameter && event.parameter.callback;
+  const params = (event && event.parameter) || {};
+  const callback = params.callback || "callback";
+  const payload = parsePayload_(params.payload);
+  payload.action = params.action || payload.action || "list";
 
-  if (action) {
-    return apiResponse_(handleApiRequest_({ action }), callback);
-  }
-
-  return HtmlService.createHtmlOutputFromFile("Index")
-    .setTitle("Ledger")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  return jsonp_(handleApiRequest_(payload), callback);
 }
 
 function doPost(event) {
-  let payload = {};
+  const payload = event && event.postData && event.postData.contents
+    ? JSON.parse(event.postData.contents)
+    : {};
 
-  if (event && event.postData && event.postData.contents) {
-    payload = JSON.parse(event.postData.contents);
-  }
-
-  return apiResponse_(handleApiRequest_(payload), null);
+  return json_(handleApiRequest_(payload));
 }
 
 function handleApiRequest_(payload) {
@@ -35,23 +29,23 @@ function handleApiRequest_(payload) {
     const action = String(payload.action || "list");
 
     if (action === "list") {
-      return { ok: true, entries: getEntries(), buildVersion: BUILD_VERSION };
+      return ok_(getEntries());
     }
 
     if (action === "add") {
-      return { ok: true, entries: addEntry(payload.entry), buildVersion: BUILD_VERSION };
+      return ok_(addEntry(payload.entry));
     }
 
     if (action === "import") {
-      return { ok: true, entries: importEntries(payload.entries), buildVersion: BUILD_VERSION };
+      return ok_(importEntries(payload.entries));
     }
 
     if (action === "delete") {
-      return { ok: true, entries: deleteEntry(payload.id), buildVersion: BUILD_VERSION };
+      return ok_(deleteEntry(payload.id));
     }
 
     if (action === "clear") {
-      return { ok: true, entries: clearEntries(), buildVersion: BUILD_VERSION };
+      return ok_(clearEntries());
     }
 
     throw new Error("Unknown action.");
@@ -64,17 +58,12 @@ function handleApiRequest_(payload) {
   }
 }
 
-function apiResponse_(payload, callback) {
-  if (callback) {
-    const safeCallback = String(callback).replace(/[^\w.$]/g, "");
-    return ContentService
-      .createTextOutput(`${safeCallback}(${JSON.stringify(payload)});`)
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-
-  return ContentService
-    .createTextOutput(JSON.stringify(payload))
-    .setMimeType(ContentService.MimeType.JSON);
+function ok_(entries) {
+  return {
+    ok: true,
+    entries,
+    buildVersion: BUILD_VERSION,
+  };
 }
 
 function getEntries() {
@@ -267,6 +256,29 @@ function isEntry_(entry) {
     VALID_TYPES.includes(entry.type) &&
     Number.isFinite(entry.amount)
   );
+}
+
+function parsePayload_(value) {
+  if (!value) return {};
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    throw new Error("Invalid payload JSON.");
+  }
+}
+
+function jsonp_(payload, callback) {
+  const safeCallback = String(callback).replace(/[^\w.$]/g, "") || "callback";
+  return ContentService
+    .createTextOutput(`${safeCallback}(${JSON.stringify(payload)});`)
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+function json_(payload) {
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function formatDate_(value) {
