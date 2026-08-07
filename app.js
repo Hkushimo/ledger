@@ -78,20 +78,6 @@ document.querySelector("#refresh").addEventListener("click", () => {
   if (!busy) refreshRemote();
 });
 
-document.querySelector("#clearAll").addEventListener("click", async () => {
-  if (!transactions.length || busy) return;
-  const confirmed = window.confirm("Clear all entries from the shared Google Sheet?");
-  if (!confirmed) return;
-
-  try {
-    setBusy(true, "Clearing shared sheet...");
-    const payload = await apiRemote("clear");
-    applyEntries(payload, "Cleared.");
-  } catch (error) {
-    showError(error);
-  }
-});
-
 document.querySelector("#exportCsv").addEventListener("click", () => {
   const rows = [
     ["date", "person", "type", "amount", "memo"],
